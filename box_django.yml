@@ -1,0 +1,72 @@
+---
+- hosts: django_box
+  gather_facts: False
+
+  vars:
+    - root_dir: "{{ playbook_dir }}"
+    - shared_dir: "{{ playbook_dir }}/../shared"
+
+
+  vars_files:
+    - ./django_vars.yml
+
+  pre_tasks:
+    - debug: msg="Pre tasks section"
+      tags: always
+
+    - name: ANSIBLE PYTHON | install python 2
+      raw: test -e /usr/bin/python || (apt -qqy update && apt install -qy python-minimal)
+      become: yes
+      tags: always
+
+    - name:  UNPRIVILEGED USERS | Get acl dependency (ansible unprivileged user operations magic)
+      apt: pkg="acl"
+      become: yes
+      tags: always
+
+    - name: gather facts
+      setup:
+      tags: always
+
+    - name: Check for common pretasks
+      local_action: stat path="{{shared_dir}}/common_pretasks.yml"
+      register: common_pretasks_exists
+      tags: always
+
+    - name: Include common pretasks
+      include_tasks: "{{shared_dir}}/common_pretasks.yml"
+      when: common_pretasks_exists.stat.exists == true
+      tags: always
+
+  roles:
+
+     - {
+         role: "sa-python"
+       }
+     - {
+         role: "sa-postgres",
+         option_create_app_user: true,
+         db_host: "{{database_host}}",
+         db_user: "{{django_database_user}}",
+         db_password: "{{django_database_password}}",
+         db_name: "{{django_database_name}}",
+         postgresql_listen_addresses: "{{ django_postgresql_listen_addresses | default(omit) }}",
+         postgres_app_network: "{{ django_postgres_app_network | default(omit) }}",
+         postgres_app_network_regex: "{{ django_postgres_app_network_regex | default(omit) }}",
+         postgres_dev_network: "{{ django_postgres_dev_network | default(omit) }}",
+         postgres_dev_network_regex: "{{ django_postgres_dev_network_regex | default(omit) }}"
+       }
+     - {
+        role: "sa-supervisord",
+        option_oldstyle_supervisord_compatibility: true
+       }
+     - {
+        role: "sa-uwsgi",
+        upstart_system: "supervisord"
+       }
+     - {
+        role: "sa-nginx"
+       }
+  tasks:
+
+    - debug: msg="Pre tasks section"

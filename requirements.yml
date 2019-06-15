@@ -1,0 +1,12 @@
+- src: softasap.sa-include
+  name: sa-include
+- src: softasap.sa-python
+  name: sa-python
+- src: softasap.sa-python3
+  name: sa-python3
+- src: softasap.sa-nginx
+  name: sa-nginx
+- src: softasap.sa-supervisord
+  name: sa-supervisord
+- src: softasap.sa-uwsgi
+  name: sa-uwsgi
